@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Interaktif Biologi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --success: #10b981;
+            --success-light: #ecfdf5;
+            --danger: #ef4444;
+            --danger-light: #fef2f2;
+            --neutral-dark: #1f2937;
+            --neutral-light: #f3f4f6;
+            --neutral-gray: #6b7280;
+            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --border-radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: var(--neutral-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .quiz-container {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 680px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            padding: 32px;
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-bottom: 24px;
+        }
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            color: var(--neutral-gray);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .progress-bar-bg {
+            background-color: var(--neutral-light);
+            height: 8px;
+            width: 100%;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            background-color: var(--primary);
+            height: 100%;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        /* Question Section */
+        .question-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        /* Options Layout */
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .option-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .option-item:hover:not(.disabled) {
+            border-color: var(--primary);
+            background-color: var(--primary-light);
+        }
+        .option-prefix {
+            font-weight: 700;
+            margin-right: 12px;
+            color: var(--neutral-gray);
+        }
+
+        /* Logic States for Options */
+        .option-item.correct {
+            border-color: var(--success);
+            background-color: var(--success-light);
+            color: #065f46;
+        }
+        .option-item.correct .option-prefix { color: var(--success); }
+        
+        .option-item.wrong {
+            border-color: var(--danger);
+            background-color: var(--danger-light);
+            color: #991b1b;
+        }
+        .option-item.wrong .option-prefix { color: var(--danger); }
+
+        .option-item.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* Action Buttons */
+        .action-container {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            flex: 1;
+        }
+        .btn-primary:hover:not(:disabled) { background-color: var(--primary-hover); }
+        .btn-primary:disabled {
+            background-color: #cbd5e1;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background-color: var(--neutral-light);
+            color: var(--neutral-dark);
+            border: 1px solid #e5e7eb;
+        }
+        .btn-secondary:hover { background-color: #e5e7eb; }
+
+        /* Explanation & Hint Box */
+        .feedback-box {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: var(--border-radius);
+            font-size: 0.925rem;
+            line-height: 1.5;
+            display: none;
+        }
+        .feedback-box.hint {
+            background-color: #fef9c3;
+            border-left: 4px solid #eab308;
+            color: #713f12;
+        }
+        .feedback-box.explanation {
+            background-color: #f1f5f9;
+            border-left: 4px solid var(--neutral-gray);
+            color: var(--neutral-dark);
+        }
+
+        /* Scoreboard Screen */
+        .result-screen {
+            display: none;
+            text-align: center;
+            padding: 16px 0;
+        }
+        .result-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+        .result-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .score-badge {
+            display: inline-block;
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 16px 0;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 24px 0;
+        }
+        .stat-card {
+            background-color: var(--neutral-light);
+            padding: 16px;
+            border-radius: var(--border-radius);
+        }
+        .stat-val {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--neutral-gray);
+            margin-top: 4px;
+        }
+
+        /* Utility */
+        .hidden { display: none !important; }
+
+        @media (max-width: 480px) {
+            .quiz-container { padding: 20px; }
+            .action-container { flex-direction: column-reverse; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div id="quiz-screen">
+            <div class="progress-container">
+                <div class="progress-info">
+                    <span id="progress-text">Soal 1 dari 30</span>
+                    <span id="accuracy-live">Akurasi: 100%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="progress-fill" class="progress-bar-fill"></div>
+                </div>
+            </div>
+
+            <div class="question-text" id="question-el">Mencari soal...</div>
+
+            <div class="options-list" id="options-container"></div>
+
+            <div id="feedback-el" class="feedback-box"></div>
+
+            <div class="action-container">
+                <button class="btn btn-secondary" id="hint-btn" onclick="showHint()">💡 Bantuan / Penjelasan</button>
+                <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" disabled>Selanjutnya ➔</button>
+            </div>
+        </div>
+
+        <div id="result-screen" class="result-screen">
+            <div class="result-icon" id="result-icon">🎉</div>
+            <div class="result-title" id="result-title">Luar Biasa!</div>
+            <p id="result-message" style="color: var(--neutral-gray);">Kamu telah menyelesaikan seluruh soal latihan biologi.</p>
+            
+            <div class="score-badge" id="final-score">0</div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-val" id="stat-correct">0/30</div>
+                    <div class="stat-label">Jawaban Benar</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" id="stat-accuracy">0%</div>
+                    <div class="stat-label">Akurasi Akhir</div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%; margin-top: 12px;" onclick="resetQuiz()">🔄 Ulangi Seluruh Kuis</button>
+        </div>
+    </div>
+
+    <script>
+        // Data Bank Soal Dokumen
+        const quizData = [
+            { id: 1, q: "Komponen abiotik yang berperan sebagai sumber energi utama dalam ekosistem adalah...", o: ["tanah", "air", "cahaya matahari", "udara", "batu"], a: 2, h: "Pikirkan sumber energi alami terbesar yang memancarkan panas dan menyinari bumi setiap hari untuk fotosintesis.", e: "Cahaya matahari adalah sumber energi utama bagi seluruh ekosistem di bumi yang menggerakkan rantai makanan lewat produsen." },
+            { id: 2, q: "Berikut yang termasuk komponen biotik adalah...", o: ["suhu", "kelembapan", "rumput", "cahaya", "tanah"], a: 2, h: "Biotik merujuk pada segala sesuatu yang bernyawa/makhluk hidup di dalam suatu lingkungan.", e: "Rumput adalah makhluk hidup (produsen), sedangkan suhu, kelembapan, cahaya, dan tanah adalah faktor fisik/benda mati (abiotik)." },
+            { id: 3, q: "Hubungan antara burung jalak dan kerbau merupakan contoh...", o: ["predasi", "kompetisi", "mutualisme", "parasitisme", "komensalisme"], a: 2, h: "Kedua pihak sama-sama diuntungkan: Jalak kenyang makan kutu, kerbau bersih dari kutu parasit.", e: "Simbiosis mutualisme adalah interaksi yang saling menguntungkan kedua organisme yang terlibat." },
+            { id: 4, q: "Hewan yang memperoleh makanan dengan memakan tumbuhan disebut...", o: ["karnivora", "omnivora", "herbivora", "detritivor", "dekomposer"], a: 2, h: "Kata kuncinya berasal dari bahasa Latin 'herba' yang berarti tanaman atau dedaunan.", e: "Herbivora adalah organisme pemakan tumbuhan. Karnivora pemakan daging, dan omnivora pemakan segala." },
+            { id: 5, q: "Aliran energi dalam ekosistem berlangsung dari...", o: ["konsumen ke produsen", "produsen ke konsumen", "pengurai ke produsen", "konsumen ke pengurai", "pengurai ke konsumen"], a: 1, h: "Energi dimulai dari organisme yang mampu menangkap cahaya matahari dan membuat makanannya sendiri, lalu disalurkan ke pemakannya.", e: "Aliran energi selalu dimulai dari produsen (tumbuhan) yang mengubah energi matahari, lalu mengalir ke konsumen (hewan)." },
+            { id: 6, q: "Tingkat trofik pertama dalam piramida makanan ditempati oleh...", o: ["konsumen I", "konsumen II", "konsumen III", "produsen", "pengurai"], a: 3, h: "Pondasi paling dasar dari rantai makanan harus diisi oleh organisme yang memproduksi biomassa sendiri.", e: "Tingkat trofik pertama (dasar) selalu ditempati oleh produsen. Konsumen I menempati tingkat trofik kedua." },
+            { id: 7, q: "Daun tanaman yang dimakan ulat menyebabkan jumlah daun berkurang. Peristiwa ini menunjukkan...", o: ["kompetisi", "predasi", "herbivori", "mutualisme", "komensalisme"], a: 2, h: "Fokus pada interaksi spesifik di mana hewan memakan bagian jaringan dari organisme autotrof (tumbuhan).", e: "Herbivori merupakan interaksi antara hewan pemakan tumbuhan dengan tumbuhan yang dimakannya." },
+            { id: 8, q: "Pada rantai makanan: padi → tikus → ular → elang, ular berperan sebagai...", o: ["produsen", "konsumen I", "konsumen II", "konsumen III", "pengurai"], a: 3, h: "Padi = produsen, Tikus = Konsumen I. Lanjutkan urutannya untuk mencari posisi ular.", e: "Padi (produsen) → Tikus (Konsumen I) → Ular (Konsumen II) → Elang (Konsumen III)." },
+            { id: 9, q: "Jaring-jaring makanan terbentuk karena...", o: ["satu organisme hanya memiliki satu jenis makanan", "beberapa rantai makanan saling berhubungan", "semua organisme adalah produsen", "semua organisme adalah konsumen", "tidak ada interaksi antarmakhluk hidup"], a: 1, h: "Di alam nyata, seekor hewan tidak hanya makan satu hal saja, melainkan terlibat di banyak jalur rantai makanan sekaligus.", e: "Jaring-jaring makanan adalah kumpulan dari beberapa rantai makanan yang saling tumpang tindih dan berhubungan di dalam ekosistem." },
+            { id: 10, q: "Hubungan antara singa dan zebra termasuk...", o: ["mutualisme", "komensalisme", "predasi", "kompetisi", "parasitisme"], a: 2, h: "Interaksi antara hewan pemburu (predator) dan hewan yang diburu (mangsa).", e: "Predasi adalah hubungan antara pemangsa (singa) dan mangsanya (zebra)." },
+            { id: 11, q: "Pada daur biogeokimia, proses penguapan air ke atmosfer disebut...", o: ["infiltrasi", "kondensasi", "evaporasi", "presipitasi", "nitrifikasi"], a: 2, h: "Istilah ini merujuk pada perubahan zat cair menjadi gas akibat panas di permukaan air seperti laut atau danau.", e: "Evaporasi adalah proses penguapan air dari permukaan bumi menuju atmosfer akibat panas matahari." },
+            { id: 12, q: "Pada siklus nitrogen, perubahan amonia menjadi nitrit disebut...", o: ["denitrifikasi", "amonifikasi", "nitrifikasi", "fiksasi", "transpirasi"], a: 2, h: "Ini adalah bagian awal dari proses konversi nitrogen oleh bakteri menjadi bentuk yang siap diserap tanaman secara umum.", e: "Nitrifikasi adalah proses konversi amonia menjadi nitrit (oleh bakteri Nitrosomonas), lalu menjadi nitrat (oleh Nitrobacter)." },
+            { id: 13, q: "Bakteri Rhizobium berperan dalam...", o: ["denitrifikasi", "fiksasi nitrogen", "fotosintesis", "respirasi", "fermentasi"], a: 1, h: "Bakteri ini hidup bersimbiosis pada bintil akar tanaman kacang-kacangan untuk menangkap nitrogen bebas dari udara.", e: "Rhizobium berperan penting dalam fiksasi nitrogen (mengikat nitrogen dari atmosfer agar bisa digunakan tanaman)." },
+            { id: 14, q: "Salah satu penyebab perubahan lingkungan adalah...", o: ["daur air", "fotosintesis", "penebangan hutan liar", "respirasi tumbuhan", "adaptasi"], a: 2, h: "Carilah aktivitas eksploitasi oleh manusia yang merusak keseimbangan ekosistem secara struktural.", e: "Penebangan hutan liar merusak habitat asli flora dan fauna serta memicu pemanasan global akibat hilangnya penyerap karbon." },
+            { id: 15, q: "Penggunaan pupuk kimia secara berlebihan dapat menyebabkan...", o: ["tanah semakin subur selamanya", "kualitas tanah menurun", "jumlah hama berkurang permanen", "udara lebih bersih", "fotosintesis meningkat terus"], a: 1, h: "Zat kimia berlebih dalam jangka panjang dapat merusak keasaman (*pH*) tanah dan membunuh mikroorganisme tanah.", e: "Penggunaan pupuk kimia berlebih membuat tanah mengeras, merusak keseimbangan mikroorganisme pengurai, dan menurunkan kesuburan alami tanah." },
+            { id: 16, q: "Kegiatan yang membantu mencegah penipisan lapisan ozon adalah...", o: ["penggunaan CFC berlebihan", "membakar sampah plastik", "menggunakan produk bebas CFC", "memperbanyak kendaraan bermotor", "penggunaan pestisida berlebih"], a: 2, h: "Senyawa kimia utama perusak ozon adalah *Chlorofluorocarbon* (CFC). Kita harus menghindarinya.", e: "Menggunakan produk ramah lingkungan bebas CFC (*Non-CFC*) melindungi lapisan ozon dari penguraian radikal klorin." },
+            { id: 17, q: "Eutrofikasi terjadi karena...", o: ["kekurangan unsur hara", "pencemaran minyak", "kelebihan unsur nitrogen dan fosfor", "peningkatan kadar oksigen", "berkurangnya alga"], a: 2, h: "Kondisi ini dipicu oleh limbah detergen atau limpahan pupuk pertanian yang menyuburkan tanaman air secara tidak terkendali.", e: "Eutrofikasi adalah ledakan pertumbuhan alga (*blooming alga*) akibat penumpukan nutrient berlebih seperti nitrogen dan fosfor di perairan." },
+            { id: 18, q: "Dampak penggunaan pestisida berlebihan terhadap perairan adalah...", o: ["meningkatkan kualitas air", "membunuh organisme air", "meningkatkan oksigen terlarut", "mempercepat fotosintesis semua organisme", "menambah keanekaragaman hayati"], a: 1, h: "Racun hama yang hanyut ke sungai atau danau bersifat toksik bagi makhluk hidup non-target di dalam air.", e: "Residu pestisida berlebih yang terbawa aliran air akan meracuni dan membunuh organisme air non-target seperti ikan dan plankton." },
+            { id: 19, q: "Salah satu proses pengolahan limbah cair secara fisik/mekanis adalah...", o: ["filtrasi", "sublimasi", "kristalisasi", "destilasi fraksionasi", "peleburan"], a: 0, h: "Metode pemisahan campuran yang menggunakan penyaring berpori untuk menahan partikel padat.", e: "Filtrasi (penyaringan) digunakan untuk memisahkan partikel padat suspensi dari limbah cair secara fisik." },
+            { id: 20, q: "Tindakan yang tidak tepat dalam pengelolaan limbah adalah...", o: ["daur ulang", "pemilahan sampah", "membuang limbah ke sungai", "pengolahan limbah", "penggunaan kembali barang"], a: 2, h: "Carilah tindakan ilegal dan merusak alam yang memicu pencemaran air.", e: "Membuang limbah langsung ke sungai tanpa diolah adalah tindakan keliru yang mencemari lingkungan akuatik." },
+            { id: 21, q: "Limbah rumah sakit sebaiknya...", o: ["dibuang ke sungai", "dicampur dengan sampah rumah tangga", "dibakar sembarangan", "diolah sesuai prosedur khusus", "ditimbun tanpa pengolahan"], a: 3, h: "Limbah medis bersifat infeksius dan berbahaya (B3), memerlukan penanganan yang sangat ketat.", e: "Limbah rumah sakit dikategorikan limbah medis berbahaya yang wajib diolah melalui prosedur khusus (misal dengan insinerator khusus)." },
+            { id: 22, q: "Salah satu tindakan untuk menghentikan kebiasaan merokok adalah...", o: ["meningkatkan jumlah rokok", "menghindari lingkungan perokok", "merokok saat stres", "membeli rokok dalam jumlah banyak", "mengganti rokok dengan produk tembakau lain"], a: 1, h: "Langkah preventif psikologis terbaik adalah menjauh dari lingkaran pertemanan atau situasi sosial yang memicu perilaku tersebut.", e: "Menghindari lingkungan sesama perokok meminimalkan stimulus psikologis dan sosial untuk kembali merokok." },
+            { id: 23, q: "Upaya mengatasi kekeringan saat kemarau panjang adalah...", o: ["membuang air bersih", "membuat sumur resapan", "menebang hutan", "memperluas lahan beton", "membakar lahan"], a: 1, h: "Kita membutuhkan metode buatan untuk memanen air hujan ke dalam tanah agar cadangan air tanah melimpah.", e: "Sumur resapan berfungsi menampung dan memasukkan air hujan ke dalam tanah, menjaga ketersediaan air tanah saat kemarau." },
+            { id: 24, q: "Efek rumah kaca terutama disebabkan oleh meningkatnya gas...", o: ["oksigen", "nitrogen", "karbon dioksida", "helium", "neon"], a: 2, h: "Gas ini dihasilkan dari pembakaran bahan bakar fosil kendaraan, industri, serta kebakaran hutan ($CO_2$).", e: "Gas Karbon Dioksida ($CO_2$) adalah gas rumah kaca utama yang memerangkap panas matahari di atmosfer bumi." },
+            { id: 25, q: "Ciri umum bioteknologi adalah...", o: ["memanfaatkan makhluk hidup atau bagiannya", "menggunakan bahan tambang", "tidak melibatkan organisme", "hanya dilakukan di laboratorium modern", "selalu menggunakan rekayasa genetika"], a: 0, h: "Prinsip dasarnya adalah kata 'bio' yang berarti hidup untuk menghasilkan barang/jasa bagi manusia.", e: "Ciri utama bioteknologi (baik konvensional maupun modern) adalah penggunaan agen hayati/makhluk hidup atau turunannya." },
+            { id: 26, q: "Prinsip dasar fermentasi adalah...", o: ["penggunaan mikroorganisme untuk menghasilkan produk tertentu", "pemanasan suhu tinggi", "pembekuan bahan", "penyaringan mekanik", "penguapan cairan"], a: 0, h: "Proses biologis anaerobik ini memanfaatkan jamur atau bakteri untuk memecah senyawa organik.", e: "Fermentasi bertumpu pada aktivitas metabolisme mikroorganisme untuk mengubah bahan baku menjadi produk baru (misal alkohol atau asam)." },
+            { id: 27, q: "Produk bioteknologi yang mengandung bakteri probiotik adalah...", o: ["tempe", "tape", "yoghurt", "kecap", "roti"], a: 2, h: "Susu fermentasi asam ini dibuat menggunakan bantuan bakteri *Lactobacillus bulgaricus*.", e: "Yoghurt difermentasi oleh bakteri asam laktat yang berfungsi baik sebagai probiotik untuk pencernaan." },
+            { id: 28, q: "Jamur yang sering dimanfaatkan dalam bioremediasi atau pembersihan limbah adalah...", o: ["Rhizopus sp.", "Aspergillus sp.", "Pleurotus sp.", "Penicillium sp.", "Saccharomyces sp."], a: 2, h: "Dikenal luas sebagai jamur tiram putih yang kaya akan enzim pendegradasi polimer hidrokarbon kompleks.", e: "Pleurotus sp. (jamur tiram) memiliki kemampuan mendegradasi senyawa polutan organik berbahaya dalam proses bioremediasi." },
+            { id: 29, q: "Pada proses bayi tabung, pembuahan terjadi di...", o: ["rahim ibu", "di tuba falopi", "di laboratorium di luar tubuh", "di ovarium", "di plasenta"], a: 2, h: "Nama medis aslinya adalah IVF (*In Vitro Fertilization*). 'In Vitro' berarti di dalam kaca/cawan petri.", e: "Bayi tabung melakukan fertilisasi (pembuahan sel telur oleh sperma) di cawan petri laboratorium, baru kemudian embrio ditanam ke rahim." },
+            { id: 30, q: "Rongga-rongga pada roti terbentuk karena gas...", o: ["oksigen", "nitrogen", "karbon monoksida", "karbon dioksida", "hidrogen"], a: 3, h: "Ragi menghasilkan gas sisa metabolisme ini selama proses fermentasi adonan kue.", e: "Fermentasi oleh *Saccharomyces cerevisiae* menghasilkan gas karbon dioksida ($CO_2$) yang terperangkap dalam adonan, membentuk rongga roti saat dipanggang." }
+        ];
+
+        // State Management Aplikasi
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let totalCorrect = 0;
+        let isAnswered = false;
+
+        // Cache Element DOM
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const progressText = document.getElementById('progress-text');
+        const accuracyLive = document.getElementById('accuracy-live');
+        const progressFill = document.getElementById('progress-fill');
+        const questionEl = document.getElementById('question-el');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackEl = document.getElementById('feedback-el');
+        const hintBtn = document.getElementById('hint-btn');
+        const nextBtn = document.getElementById('next-btn');
+
+        // Memulai Kuis Pertama Kali
+        function initQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            totalCorrect = 0;
+            isAnswered = false;
+            
+            quizScreen.classList.remove('hidden');
+            resultScreen.style.display = 'none';
+            loadQuestion();
+        }
+
+        // Memuat Soal ke Layar berdasarkan Index State
+        function loadQuestion() {
+            isAnswered = false;
+            nextBtn.disabled = true;
+            feedbackEl.style.display = 'none';
+            feedbackEl.className = 'feedback-box';
+            
+            const currentQuestion = quizData[currentQuestionIndex];
+            
+            // Update Progress Bar
+            const totalQuestions = quizData.length;
+            const progressPercent = ((currentQuestionIndex) / totalQuestions) * 100;
+            progressFill.style.width = `${progressPercent}%`;
+            progressText.innerText = `Soal ${currentQuestionIndex + 1} dari ${totalQuestions}`;
+            
+            // Hitung akurasi live berjalan
+            if (currentQuestionIndex > 0) {
+                const liveAcc = Math.round((totalCorrect / currentQuestionIndex) * 100);
+                accuracyLive.innerText = `Akurasi: ${liveAcc}%`;
+            } else {
+                accuracyLive.innerText = `Akurasi: 100%`;
+            }
+
+            // Tampilkan Teks Soal
+            questionEl.innerText = `${currentQuestion.id}. ${currentQuestion.q}`;
+
+            // Render Pilihan Jawaban
+            optionsContainer.innerHTML = '';
+            const prefixes = ['A', 'B', 'C', 'D', 'E'];
+            
+            currentQuestion.o.forEach((option, idx) => {
+                const optionItem = document.createElement('div');
+                optionItem.className = 'option-item';
+                optionItem.innerHTML = `<span class="option-prefix">${prefixes[idx]}.</span> <span class="option-text">${option}</span>`;
+                optionItem.addEventListener('click', () => selectOption(idx, optionItem));
+                optionsContainer.appendChild(optionItem);
+            });
+        }
+
+        // Logic Aksi Klik Pilihan Jawaban
+        function selectOption(selectedIndex, element) {
+            if (isAnswered) return; // Mencegah klik ganda setelah terjawab
+            
+            isAnswered = true;
+            const currentQuestion = quizData[currentQuestionIndex];
+            const allOptions = optionsContainer.children;
+
+            // Nonaktifkan semua opsi agar tidak bisa diklik lagi
+            for (let item of allOptions) {
+                item.classList.add('disabled');
+            }
+
+            // Validasi Jawaban Benar / Salah
+            if (selectedIndex === currentQuestion.a) {
+                element.classList.add('correct');
+                score += 10; // Bobot nilai per soal standar
+                totalCorrect++;
+                showExplanation(true, currentQuestion.e);
+            } else {
+                element.classList.add('wrong');
+                // Beri penanda warna hijau pada opsi yang seharusnya benar (Kunci Jawaban)
+                allOptions[currentQuestion.a].classList.add('correct');
+                showExplanation(false, currentQuestion.e);
+            }
+
+            // Aktifkan tombol selanjutnya setelah user memilih jawaban
+            nextBtn.disabled = false;
+        }
+
+        // Tampilkan Box Bantuan Petunjuk Soal (Hint)
+        function showHint() {
+            if (isAnswered) return; // Tidak menampilkan hint jika soal sudah dijawab
+            const currentQuestion = quizData[currentQuestionIndex];
+            feedbackEl.innerText = `💡 Petunjuk Hint: ${currentQuestion.h}`;
+            feedbackEl.className = 'feedback-box hint';
+            feedbackEl.style.display = 'block';
+        }
+
+        // Tampilkan Pembahasan Setelah Menjawab (Real-Time Feedback)
+        function showExplanation(isCorrect, text) {
+            const statusText = isCorrect ? "✅ Jawaban Kamu Benar!" : "❌ Jawaban Kamu Kurang Tepat.";
+            feedbackEl.innerHTML = `<strong>${statusText}</strong><br><br>💡 <strong>Pembahasan:</strong> ${text}`;
+            feedbackEl.className = 'feedback-box explanation';
+            feedbackEl.style.display = 'block';
+        }
+
+        // Navigasi ke Soal Berikutnya / Menuju Scoreboard jika Selesai
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showScoreboard();
+            }
+        }
+
+        // Transisi Layar Menuju Scoreboard Akhir
+        function showScoreboard() {
+            quizScreen.classList.add('hidden');
+            resultScreen.style.display = 'block';
+            
+            const totalQuestions = quizData.length;
+            const maxScore = totalQuestions * 10;
+            const accuracy = Math.round((totalCorrect / totalQuestions) * 100);
+            
+            // Set data scoreboard
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('stat-correct').innerText = `${totalCorrect} / ${totalQuestions}`;
+            document.getElementById('stat-accuracy').innerText = `${accuracy}%`;
+
+            // Atur Apresiasi Dinamis Berdasarkan Tingkat Akurasi
+            const iconEl = document.getElementById('result-icon');
+            const titleEl = document.getElementById('result-title');
+            const msgEl = document.getElementById('result-message');
+
+            if (accuracy >= 85) {
+                iconEl.innerText = "🏆";
+                titleEl.innerText = "Luar Biasa, Keren!";
+                msgEl.innerText = "Kamu sudah menguasai konsep ekosistem, lingkungan, dan bioteknologi dengan sangat matang.";
+            } else if (accuracy >= 60) {
+                iconEl.innerText = "👍";
+                titleEl.innerText = "Kerja Bagus!";
+                msgEl.innerText = "Hasil yang cukup baik, namun yuk baca-baca lagi materi daur biogeokimia dan dampak polusi agar makin sempurna.";
+            } else {
+                iconEl.innerText = "📚";
+                titleEl.innerText = "Tetap Semangat Belajar!";
+                msgEl.innerText = "Jangan berkecil hati. Kamu bisa mengulangi kuis ini lagi untuk mempertajam pemahaman biologimu.";
+            }
+        }
+
+        // Reset Total State untuk Mengulang Kuis dari Awal
+        function resetQuiz() {
+            initQuiz();
+        }
+
+        // Jalankan kuis saat window pertama kali terbuka
+        window.onload = initQuiz;
+    </script>
+</body>
+</html>
